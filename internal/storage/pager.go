@@ -419,3 +419,52 @@ func (p *Pager) Close() error {
 	}
 	return p.file.Close()
 }
+
+// ForEachDirty calls fn for every modified page still in the pool.
+//
+// Commit uses it to write a log image of each change before the commit record
+// goes down. fn must not call back into the pager.
+func (p *Pager) ForEachDirty(fn func(*Page) error) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, f := range p.frames {
+		if !f.dirty {
+			continue
+		}
+		if err := fn(f.page); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DiscardDirty throws away every unwritten change and reloads those pages from
+// disk.
+//
+// This is how a rollback works without undo records: nothing uncommitted was
+// ever written to the data file, so forgetting the in-memory copy is enough to
+// erase the transaction. A pinned page cannot be discarded, and its presence
+// means a statement is still running -- which would be a bug in the caller, so
+// it is reported rather than skipped.
+func (p *Pager) DiscardDirty() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for id, f := range p.frames {
+		if !f.dirty {
+			continue
+		}
+		if f.pins > 0 {
+			return fmt.Errorf("cannot roll back: page %d is still pinned", id)
+		}
+		if f.element != nil {
+			p.lru.Remove(f.element)
+		}
+		delete(p.frames, id)
+	}
+	// The header holds allocation bookkeeping that a rolled-back transaction
+	// may have advanced. Re-reading it puts the free list and page count back
+	// to what is actually on disk.
+	return p.readFileHeader()
+}
