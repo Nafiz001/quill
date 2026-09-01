@@ -1,0 +1,14 @@
+/bin/
+*.exe
+*.test
+*.out
+coverage.html
+
+# Database files produced at runtime
+*.db
+*.wal
+/data/
+
+.idea/
+.vscode/
+*.swp
