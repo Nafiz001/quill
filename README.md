@@ -229,6 +229,24 @@ projection; grouped output lost its table qualifier so `GROUP BY u.name ORDER BY
 u.name` failed to resolve; and truncating the log failed on Windows, which
 refuses to shrink a file opened for append.
 
+## Benchmarks
+
+11th-gen i5-1155G7, Windows 11, `go test -bench`:
+
+| | |
+|---|---|
+| B+tree insert | 1,590 ns/op |
+| B+tree point lookup | 1,173 ns/op |
+| Buffer pool fetch (cached) | 86 ns/op |
+| Row encode / decode | 55 ns / 115 ns |
+| Key encode | 18 ns/op |
+| Parse a join with GROUP BY and ORDER BY | 4.9 us/op |
+
+These are single-threaded and include the buffer pool lookup on every page
+access, so they measure the real path rather than a hot loop over memory. The
+number that matters most is not in the table: **100,000 rows produce a B+tree of
+height 3**, so a lookup is three page accesses regardless of table size.
+
 ## Known limitations
 
 Stated plainly, because an interviewer will ask.
