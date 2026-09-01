@@ -389,3 +389,20 @@ func (d *DB) Stats() Stats {
 		Tables:  len(d.catalog.Tables()),
 	}
 }
+
+// simulateCrash drops every file handle without flushing anything.
+//
+// It is how the durability tests kill a database: no checkpoint, no final
+// flush, and every dirty page in the buffer pool discarded. What survives is
+// exactly what a real crash would leave -- the data file as of its last write,
+// and the log as of its last sync.
+func (d *DB) simulateCrash() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.closed {
+		return
+	}
+	d.closed = true
+	_ = d.wal.Abandon()
+	_ = d.pager.Abandon()
+}

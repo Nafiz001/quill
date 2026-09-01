@@ -468,3 +468,18 @@ func (p *Pager) DiscardDirty() error {
 	// to what is actually on disk.
 	return p.readFileHeader()
 }
+
+// Abandon closes the file without writing anything still buffered.
+//
+// It exists to simulate a crash in tests: the data file is left exactly as it
+// was at the last real write, with every dirty page lost, which is what a power
+// cut produces. Calling it in ordinary operation would discard committed data,
+// so it is deliberately not part of the normal lifecycle.
+func (p *Pager) Abandon() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.frames = make(map[PageID]*frame)
+	p.lru.Init()
+	return p.file.Close()
+}

@@ -688,6 +688,21 @@ func (p *Parser) parseDrop() (Statement, error) {
 //	unary -
 //	primary
 
+// reservedInExpression are the keywords that introduce a clause, and so cannot
+// double as a bare column name.
+//
+// Everything outside this set is fair game as an identifier, because most SQL
+// keywords are also plausible column names and reserving them all would be
+// stricter than the standard and more annoying than useful.
+var reservedInExpression = map[string]bool{
+	"FROM": true, "WHERE": true, "GROUP": true, "HAVING": true,
+	"ORDER": true, "LIMIT": true, "OFFSET": true, "JOIN": true,
+	"INNER": true, "LEFT": true, "RIGHT": true, "OUTER": true,
+	"CROSS": true, "ON": true, "AS": true, "VALUES": true,
+	"SET": true, "INTO": true, "SELECT": true, "INSERT": true,
+	"UPDATE": true, "DELETE": true, "CREATE": true, "DROP": true,
+}
+
 func (p *Parser) parseExpression() (Expression, error) { return p.parseOr() }
 
 func (p *Parser) parseOr() (Expression, error) {
@@ -959,7 +974,18 @@ func (p *Parser) parsePrimary() (Expression, error) {
 			p.pos++
 			return &Literal{Value: types.NewBool(false)}, nil
 		case "COUNT", "SUM", "AVG", "MIN", "MAX":
-			return p.parseFunctionCall()
+			// Only a function call if a parenthesis follows. `SELECT count
+			// FROM t` has to work, because count is a perfectly ordinary
+			// column name.
+			if next := p.peekAt(1); next.Type == TokenPunct && next.Literal == "(" {
+				return p.parseFunctionCall()
+			}
+		}
+		// A keyword that introduces a clause cannot also be a bare column
+		// name, or `SELECT FROM t` would silently parse as selecting a column
+		// called "FROM" instead of being the error it is.
+		if reservedInExpression[t.Literal] {
+			return nil, p.errorf("expected a value, found the keyword %s", t.Literal)
 		}
 		// Any other keyword in value position is a column named after one.
 		return p.parseColumnOrFunction()

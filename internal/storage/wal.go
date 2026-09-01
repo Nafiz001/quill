@@ -394,3 +394,20 @@ func readRecord(data []byte, pos int) (walRecord, int, bool) {
 	}
 	return rec, pos + total, true
 }
+
+// Abandon closes the log without flushing what is still buffered.
+//
+// Like Pager.Abandon, this simulates a crash. Records that were already synced
+// -- which is every commit record, under the default policy -- stay on disk,
+// and anything still in the buffer is lost. That is precisely the boundary
+// recovery has to reconstruct.
+func (w *WAL) Abandon() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.closed {
+		return nil
+	}
+	w.closed = true
+	w.buf = w.buf[:0]
+	return w.f.Close()
+}

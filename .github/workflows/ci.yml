@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Verify formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test with race detector
+        run: go test -race ./...
+
+      - name: Build
+        run: go build -o bin/ ./cmd/...
+
+  psql:
+    name: Verify against the real psql
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      # The point of this job: a client nobody wrote for this project has to be
+      # able to drive it. A protocol mistake that the in-process tests tolerate
+      # will not get past psql.
+      - name: Install the PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Start quill
+        run: |
+          go build -o bin/quill ./cmd/quill
+          ./bin/quill -serve 127.0.0.1:15433 /tmp/ci.db &
+          for i in $(seq 1 40); do
+            psql -h 127.0.0.1 -p 15433 -U quill -c "SELECT 1" >/dev/null 2>&1 && break
+            sleep 0.25
+          done
+
+      - name: Run SQL through psql
+        env:
+          PSQL: psql -h 127.0.0.1 -p 15433 -U quill -t -A
+        run: |
+          set -e
+          $PSQL -c "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT, age INTEGER)"
+          $PSQL -c "CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER, total FLOAT)"
+          $PSQL -c "INSERT INTO users VALUES (1,'Nafiz','Dhaka',25),(2,'Rahim','Dhaka',31),(3,'Karim','Ctg',22)"
+          $PSQL -c "INSERT INTO orders VALUES (10,1,250.5),(11,1,99.5),(12,2,1500)"
+
+          [ "$($PSQL -c 'SELECT COUNT(*) FROM users')" = "3" ]
+          [ "$($PSQL -c "SELECT name FROM users WHERE id = 2")" = "Rahim" ]
+          [ "$($PSQL -c 'SELECT SUM(total) FROM orders')" = "1850" ]
+
+          # A join, an aggregate over it, and a grouped result.
+          [ "$($PSQL -c "SELECT SUM(o.total) FROM users u JOIN orders o ON u.id=o.user_id WHERE u.city='Dhaka'")" = "1850" ]
+          [ "$($PSQL -c 'SELECT COUNT(*) FROM users GROUP BY city' | sort | tr "\n" ",")" = "1,2," ]
+
+          # The planner should reach for the index on a primary key equality.
+          $PSQL -c "EXPLAIN SELECT * FROM users WHERE id = 2" | grep -q IndexScan
+
+          # A transaction that rolls back must leave nothing.
+          $PSQL -c "BEGIN; INSERT INTO users VALUES (99,'ghost','x',1); ROLLBACK;"
+          [ "$($PSQL -c 'SELECT COUNT(*) FROM users')" = "3" ]
+
+          # Errors must arrive as errors, not as a hung connection.
+          ! $PSQL -c "SELECT * FROM nosuchtable" 2>/dev/null
+          ! $PSQL -c "INSERT INTO users VALUES (1,'dup','x',1)" 2>/dev/null
+
+      - name: Verify data survives a restart
+        env:
+          PSQL: psql -h 127.0.0.1 -p 15433 -U quill -t -A
+        run: |
+          set -e
+          pkill -f "quill -serve" || true
+          sleep 1
+          ./bin/quill -serve 127.0.0.1:15433 /tmp/ci.db &
+          for i in $(seq 1 40); do
+            psql -h 127.0.0.1 -p 15433 -U quill -c "SELECT 1" >/dev/null 2>&1 && break
+            sleep 0.25
+          done
+          [ "$($PSQL -c 'SELECT COUNT(*) FROM users')" = "3" ]
+          [ "$($PSQL -c "SELECT name FROM users WHERE id = 1")" = "Nafiz" ]
