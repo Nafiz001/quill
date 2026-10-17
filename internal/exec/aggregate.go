@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nafizahmed/quill/internal/sql"
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/sql"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Aggregation collapses many rows into one per group.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nafizahmed/quill/internal/exec"
+	"github.com/Nafiz001/quill/internal/exec"
 )
 
 // These are the tests that matter most: they go in through SQL and come out as

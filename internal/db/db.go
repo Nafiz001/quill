@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/nafizahmed/quill/internal/catalog"
-	"github.com/nafizahmed/quill/internal/exec"
-	"github.com/nafizahmed/quill/internal/sql"
-	"github.com/nafizahmed/quill/internal/storage"
+	"github.com/Nafiz001/quill/internal/catalog"
+	"github.com/Nafiz001/quill/internal/exec"
+	"github.com/Nafiz001/quill/internal/sql"
+	"github.com/Nafiz001/quill/internal/storage"
 )
 
 // Options configure a database.

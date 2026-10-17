@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // The AST is deliberately close to the surface syntax rather than to any

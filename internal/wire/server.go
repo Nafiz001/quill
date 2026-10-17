@@ -12,10 +12,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/nafizahmed/quill/internal/db"
-	"github.com/nafizahmed/quill/internal/exec"
-	"github.com/nafizahmed/quill/internal/sql"
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/db"
+	"github.com/Nafiz001/quill/internal/exec"
+	"github.com/Nafiz001/quill/internal/sql"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Server speaks the PostgreSQL protocol on behalf of a quill database.

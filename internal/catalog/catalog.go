@@ -16,8 +16,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nafizahmed/quill/internal/storage"
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/storage"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Column is one column definition.

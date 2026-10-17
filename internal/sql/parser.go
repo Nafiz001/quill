@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Parser turns tokens into a syntax tree by recursive descent.

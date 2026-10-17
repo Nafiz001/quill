@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nafizahmed/quill/internal/exec"
-	"github.com/nafizahmed/quill/internal/storage"
+	"github.com/Nafiz001/quill/internal/exec"
+	"github.com/Nafiz001/quill/internal/storage"
 )
 
 // Durability is only proven by killing the database, so these tests simulate a

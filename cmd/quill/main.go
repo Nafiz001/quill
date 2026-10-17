@@ -18,9 +18,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nafizahmed/quill/internal/db"
-	"github.com/nafizahmed/quill/internal/exec"
-	"github.com/nafizahmed/quill/internal/wire"
+	"github.com/Nafiz001/quill/internal/db"
+	"github.com/Nafiz001/quill/internal/exec"
+	"github.com/Nafiz001/quill/internal/wire"
 )
 
 const version = "0.1.0"

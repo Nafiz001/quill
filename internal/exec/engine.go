@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nafizahmed/quill/internal/catalog"
-	"github.com/nafizahmed/quill/internal/sql"
-	"github.com/nafizahmed/quill/internal/storage"
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/catalog"
+	"github.com/Nafiz001/quill/internal/sql"
+	"github.com/Nafiz001/quill/internal/storage"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Engine executes statements against a database.

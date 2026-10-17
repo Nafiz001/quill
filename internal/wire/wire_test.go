@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nafizahmed/quill/internal/db"
+	"github.com/Nafiz001/quill/internal/db"
 )
 
 // These tests drive the server the way a real client does: raw protocol bytes

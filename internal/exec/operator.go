@@ -5,10 +5,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nafizahmed/quill/internal/catalog"
-	"github.com/nafizahmed/quill/internal/sql"
-	"github.com/nafizahmed/quill/internal/storage"
-	"github.com/nafizahmed/quill/internal/types"
+	"github.com/Nafiz001/quill/internal/catalog"
+	"github.com/Nafiz001/quill/internal/sql"
+	"github.com/Nafiz001/quill/internal/storage"
+	"github.com/Nafiz001/quill/internal/types"
 )
 
 // Operator is one node in a query plan.

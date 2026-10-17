@@ -204,9 +204,9 @@ buffer pool activity, and `\checkpoint`.
 
 ```console
 $ go test -race ./...
-ok  github.com/nafizahmed/quill/internal/db
-ok  github.com/nafizahmed/quill/internal/storage
-ok  github.com/nafizahmed/quill/internal/wire
+ok  github.com/Nafiz001/quill/internal/db
+ok  github.com/Nafiz001/quill/internal/storage
+ok  github.com/Nafiz001/quill/internal/wire
 ```
 
 The B+tree gets checked structurally rather than by results alone: `Verify()`
