@@ -40,6 +40,8 @@ func run() error {
 		noSync      bool
 		readOnly    bool
 		showVersion bool
+		stmtTimeout time.Duration
+		maxRows     int
 		logLevel    string
 	)
 	flag.StringVar(&serveAddr, "serve", "", "serve the PostgreSQL protocol on this address, e.g. :5433")
@@ -47,6 +49,8 @@ func run() error {
 	flag.IntVar(&poolSize, "pool", 0, "buffer pool size in pages (default 1024, which is 4MB)")
 	flag.BoolVar(&noSync, "no-sync", false, "do not fsync the log on commit: faster, and a crash can lose recent commits")
 	flag.BoolVar(&readOnly, "read-only", false, "refuse every statement that would write")
+	flag.DurationVar(&stmtTimeout, "statement-timeout", 0, "cancel a statement that runs longer than this, e.g. 5s (default: no limit)")
+	flag.IntVar(&maxRows, "max-rows", 0, "refuse a query that would return more rows than this (default: no limit)")
 	flag.BoolVar(&showVersion, "version", false, "print the version and exit")
 	flag.StringVar(&logLevel, "loglevel", "info", "log level: debug, info, warn, error")
 	flag.Parse()
@@ -65,6 +69,8 @@ func run() error {
 	opts.PoolSize = poolSize
 	opts.SyncOnCommit = !noSync
 	opts.ReadOnly = readOnly
+	opts.StatementTimeout = stmtTimeout
+	opts.MaxResultRows = maxRows
 
 	database, err := db.Open(path, opts)
 	if err != nil {

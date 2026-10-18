@@ -196,6 +196,14 @@ $ quill -serve :15433 shop.db         # psql can connect
 | `-pool` | `1024` | buffer pool size in pages (4MB) |
 | `-no-sync` | off | skip the fsync on commit: faster, loses recent commits on a crash |
 | `-read-only` | off | refuse every statement that would write |
+| `-statement-timeout` | off | cancel a statement that runs longer than this, e.g. `3s` |
+| `-max-rows` | off | refuse a query that would return more rows than this |
+
+The last three flags are for a database that strangers can reach. Results are
+built in memory and a join is a nested loop, so without them one self-join
+would stall every other connection (statements run one at a time) or exhaust
+memory. A statement that goes over is cancelled with an ordinary error and the
+session carries on.
 
 The shell has `\d` to list tables, `\d <table>` to describe one, `\stats` for
 buffer pool activity, and `\checkpoint`.

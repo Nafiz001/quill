@@ -1,0 +1,19 @@
+name: Image
+
+# Builds the public demo image for amd64 and arm64 and publishes it as
+# ghcr.io/nafiz001/quill, which the portfolio server pulls. The build itself
+# lives in Nafiz001/portfolio-deploy so every project builds the same way.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    uses: Nafiz001/portfolio-deploy/.github/workflows/image.yml@main
+    with:
+      image: quill

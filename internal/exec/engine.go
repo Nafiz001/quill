@@ -3,6 +3,7 @@ package exec
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Nafiz001/quill/internal/catalog"
 	"github.com/Nafiz001/quill/internal/sql"
@@ -14,11 +15,18 @@ import (
 type Engine struct {
 	pager   *storage.Pager
 	catalog *catalog.Catalog
+	limits  Limits
 }
 
 // NewEngine builds an engine over an open database.
 func NewEngine(pager *storage.Pager, cat *catalog.Catalog) *Engine {
 	return &Engine{pager: pager, catalog: cat}
+}
+
+// SetLimits bounds what one statement may cost; see Limits.
+func (e *Engine) SetLimits(timeout time.Duration, maxRows int) {
+	e.limits.Timeout = timeout
+	e.limits.MaxRows = maxRows
 }
 
 // Catalog exposes the schema, for tooling and the wire protocol.
@@ -37,6 +45,7 @@ type Result struct {
 
 // Execute runs one statement.
 func (e *Engine) Execute(stmt sql.Statement) (*Result, error) {
+	e.limits.begin()
 	switch s := stmt.(type) {
 	case *sql.SelectStmt:
 		return e.executeSelect(s)
@@ -239,7 +248,11 @@ func (e *Engine) planFrom(ref *sql.TableRef, where sql.Expression) (Operator, er
 	if err != nil {
 		return nil, err
 	}
-	return NewNestedLoopJoin(left, right, ref.Join.Type, ref.Join.On)
+	join, err := NewNestedLoopJoin(left, right, ref.Join.Type, ref.Join.On)
+	if join != nil {
+		join.lim = &e.limits
+	}
+	return join, err
 }
 
 // planTable chooses how to read one table.
@@ -257,10 +270,18 @@ func (e *Engine) planTable(ref *sql.TableRef, where sql.Expression) (Operator, e
 
 	if where != nil {
 		if key, describe, ok := e.primaryKeyLookup(table, ref.Ref(), where); ok {
-			return NewIndexScan(e.catalog, table, ref.Alias, key, key, describe)
+			scan, err := NewIndexScan(e.catalog, table, ref.Alias, key, key, describe)
+			if scan != nil {
+				scan.lim = &e.limits
+			}
+			return scan, err
 		}
 	}
-	return NewSeqScan(e.catalog, table, ref.Alias)
+	scan, err := NewSeqScan(e.catalog, table, ref.Alias)
+	if scan != nil {
+		scan.lim = &e.limits
+	}
+	return scan, err
 }
 
 // primaryKeyLookup recognises `WHERE pk = constant` and returns the encoded key.
@@ -374,6 +395,9 @@ func (e *Engine) executeSelect(stmt *sql.SelectStmt) (*Result, error) {
 			break
 		}
 		result.Rows = append(result.Rows, row)
+		if e.limits.MaxRows > 0 && len(result.Rows) > e.limits.MaxRows {
+			return nil, ErrResultTooLarge
+		}
 	}
 	result.Tag = fmt.Sprintf("SELECT %d", len(result.Rows))
 	return result, nil

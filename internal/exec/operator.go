@@ -39,6 +39,7 @@ type SeqScan struct {
 	// rowsRead backs EXPLAIN ANALYZE-style reporting.
 	rowsRead int
 	done     bool
+	lim      *Limits
 }
 
 // NewSeqScan opens a scan over a whole table.
@@ -67,6 +68,9 @@ func tableSchema(table *catalog.Table, alias string) *Schema {
 func (s *SeqScan) Schema() *Schema { return s.schema }
 
 func (s *SeqScan) Next() (Row, error) {
+	if err := s.lim.tick(); err != nil {
+		return nil, err
+	}
 	if s.done || !s.cursor.Valid() {
 		s.done = true
 		return nil, s.cursor.Err()
@@ -100,6 +104,7 @@ type IndexScan struct {
 	low, high string
 	rowsRead  int
 	done      bool
+	lim       *Limits
 }
 
 // NewIndexScan opens a scan over [low, high]. A nil bound is open-ended.
@@ -122,6 +127,9 @@ func NewIndexScan(cat *catalog.Catalog, table *catalog.Table, alias string, low,
 func (s *IndexScan) Schema() *Schema { return s.schema }
 
 func (s *IndexScan) Next() (Row, error) {
+	if err := s.lim.tick(); err != nil {
+		return nil, err
+	}
 	if s.done || !s.cursor.Valid() {
 		s.done = true
 		return nil, s.cursor.Err()
@@ -515,6 +523,7 @@ type NestedLoopJoin struct {
 	// matched tracks whether the current left row found any partner, which is
 	// what a LEFT JOIN needs to know before emitting nulls.
 	matched bool
+	lim     *Limits
 }
 
 func NewNestedLoopJoin(left, right Operator, joinType sql.JoinType, condition sql.Expression) (*NestedLoopJoin, error) {
@@ -565,6 +574,9 @@ func (j *NestedLoopJoin) Next() (Row, error) {
 		for j.rightPos < len(j.rightRows) {
 			right := j.rightRows[j.rightPos]
 			j.rightPos++
+			if err := j.lim.tick(); err != nil {
+				return nil, err
+			}
 
 			combined := make(Row, 0, len(j.currentLeft)+len(right))
 			combined = append(combined, j.currentLeft...)

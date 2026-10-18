@@ -5,6 +5,7 @@ package db
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/Nafiz001/quill/internal/catalog"
 	"github.com/Nafiz001/quill/internal/exec"
@@ -22,6 +23,11 @@ type Options struct {
 	SyncOnCommit bool
 	// ReadOnly refuses every statement that would write.
 	ReadOnly bool
+	// StatementTimeout cancels a statement that runs longer. Zero means no
+	// limit. MaxResultRows rejects a query that would return more rows than
+	// this. Both are for a database that strangers can query.
+	StatementTimeout time.Duration
+	MaxResultRows    int
 }
 
 // DefaultOptions returns durable defaults.
@@ -97,6 +103,7 @@ func Open(path string, opts Options) (*DB, error) {
 		nextTxnID: 1,
 	}
 	d.recoveryStats = stats
+	d.engine.SetLimits(opts.StatementTimeout, opts.MaxResultRows)
 	return d, nil
 }
 
