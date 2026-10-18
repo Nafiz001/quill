@@ -22,6 +22,8 @@ quill->  ORDER BY spent DESC;
 (2 rows)
 ```
 
+**Try it:** a public, read-only instance is at https://quill.130-210-37-18.sslip.io — `psql -h 130.210.37.18 -p 15433 -U quill`.
+
 No storage library, no parser generator, no SQL engine. Pages, a B+tree, a
 lexer, a planner, and a write-ahead log, all written here.
 
